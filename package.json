@@ -1,0 +1,19 @@
+{
+  "name": "schema-entity-mongodb",
+  "version": "0.0.1",
+  "description": "MongoDB helper functions for working with data entities based on JSON Schema",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/henit/schema-entity-mongodb.git"
+  },
+  "author": "Henrik Haugberg <henrik.haugberg@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/henit/schema-entity-mongodb/issues"
+  },
+  "homepage": "https://github.com/henit/schema-entity-mongodb#readme"
+}
