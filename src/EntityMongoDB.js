@@ -228,7 +228,7 @@ EntityMongoDB.upsertOne = async (dbCollection, Entity, existing = {}, updateProp
  * @param {object} [insertOnlyProps] Properties to set only on insert operation
  * @return {function} Function taking only entity prop
  */
-EntityMongoDB.upsertOneFP = (dbCollection, Entity, updateProps = {}, insertOnlyProps = {}) => {
+EntityMongoDB.upsertOnePF = (dbCollection, Entity, updateProps = {}, insertOnlyProps = {}) => {
     return (existing = {}) =>
         EntityMongoDB.upsertOne(dbCollection, Entity, existing, updateProps, insertOnlyProps);
 };
@@ -349,7 +349,7 @@ EntityMongoDB.all = (dbCollection, Entity) => {
         updateOne: (...args) => EntityMongoDB.updateOne(dbCollection, Entity, ...args),
         replaceOne: (...args) => EntityMongoDB.replaceOne(dbCollection, Entity, ...args),
         upsertOne: (...args) => EntityMongoDB.upsertOne(dbCollection, Entity, ...args),
-        upsertOneFP: (...args) => EntityMongoDB.upsertOneFP(dbCollection, Entity, ...args),
+        upsertOnePF: (...args) => EntityMongoDB.upsertOnePF(dbCollection, Entity, ...args),
         deleteOne: (...args) => EntityMongoDB.deleteOne(dbCollection, ...args),
         deleteById: (...args) => EntityMongoDB.deleteById(dbCollection, ...args),
         aggregate: (...args) => EntityMongoDB.aggregate(dbCollection, ...args),
