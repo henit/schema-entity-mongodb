@@ -252,7 +252,7 @@ EntityMongoDB.distinct = (dbCollection, ...args) => {
 EntityMongoDB.embedAsReference = async (Entity, target, referencePath, embedName = null, objectPath = null) => {
     const deepTarget = _.get(objectPath, target) || target;
 
-    const withEmbeds = await Promise.all(_.castArray(deepTarget)
+    const withEmbedsArray = await Promise.all(_.castArray(deepTarget)
         .map(async deepTarget => {
             const reference = _.get(referencePath, deepTarget);
 
@@ -275,6 +275,7 @@ EntityMongoDB.embedAsReference = async (Entity, target, referencePath, embedName
             };
         })
     );
+    const withEmbeds = Array.isArray(deepTarget) ? withEmbedsArray : _.head(withEmbedsArray);
 
     return objectPath ?
         _.set(objectPath, withEmbeds, target)
@@ -311,7 +312,8 @@ EntityMongoDB.all = (dbCollection, Entity) => {
         distinct: (...args) => EntityMongoDB.distinct(dbCollection, ...args),
 
         embedAsReference: (...args) => EntityMongoDB.embedAsReference(Entity, ...args),
-        embedAsReferencePF: (...args) => target => EntityMongoDB(Entity, target, ...args)
+        embedAsReferencePF: (...args) => target => EntityMongoDB.embedAsReference(Entity, target, ...args),
+        embedAsReferenceAPF: (...args) => async target => await EntityMongoDB.embedAsReference(Entity, await target, ...args)
     };
 };
 
