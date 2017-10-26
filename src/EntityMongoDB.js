@@ -1,4 +1,5 @@
 import 'regenerator-runtime/runtime'; // For ES2017-await & ES2015-generators
+import 'core-js/fn/array/is-array';
 import _ from 'lodash/fp';
 import monk from 'monk';
 import Sert from 'sert';
@@ -116,7 +117,7 @@ EntityMongoDB.updateOne = async (dbCollection, Entity, props = {}) => {
     };
 
     await dbCollection.update(query, updates);
-    return await Entity.findOne(dbCollection, Entity, query);
+    return await EntityMongoDB.findOne(dbCollection, Entity, query);
 };
 
 /**
@@ -140,7 +141,7 @@ EntityMongoDB.replaceOne = async (dbCollection, Entity, props = {}) => {
     const query = { _id: monk.id(cleanProps.id) };
 
     await dbCollection.update(query, Entity.toDoc(cleanProps));
-    return Entity.findOne(dbCollection, Entity, query);
+    return EntityMongoDB.findOne(dbCollection, Entity, query);
 };
 
 /**
@@ -163,10 +164,10 @@ EntityMongoDB.upsertOne = async (dbCollection, Entity, existing = {}, updateProp
             // No properties to update
             return existing;
         }
-        return await Entity.updateOne(dbCollection, Entity, { ...updateProps, id: existing.id });
+        return await EntityMongoDB.updateOne(dbCollection, Entity, { ...updateProps, id: existing.id });
     } else {
         // Insert new entity
-        return Entity.createOne(dbCollection, Entity, { ...insertOnlyProps, ...updateProps });
+        return EntityMongoDB.createOne(dbCollection, Entity, { ...insertOnlyProps, ...updateProps });
     }
 };
 
@@ -184,7 +185,7 @@ EntityMongoDB.upsertOne = async (dbCollection, Entity, existing = {}, updateProp
  */
 EntityMongoDB.upsertOneFP = (dbCollection, Entity, updateProps = {}, insertOnlyProps = {}) => {
     return (existing = {}) =>
-        Entity.upsertOne(dbCollection, Entity, existing, updateProps, insertOnlyProps);
+        EntityMongoDB.upsertOne(dbCollection, Entity, existing, updateProps, insertOnlyProps);
 };
 
 /**
@@ -239,6 +240,50 @@ EntityMongoDB.distinct = (dbCollection, ...args) => {
 };
 
 /**
+ * Embed a given type of entity as a reference on another object or subobject (like an entity of another type)
+ * @param {object} Entity Entity functions for the referenced type of entity
+ * @param {object} target Object containing the reference
+ * @param {string} referencePath Path to reference id in target object
+ * @param {string} [embedName] Name of embed property (reference path will be used if omitted)
+ * @param {string} [objectPath] Path to object or array of objects where referenced data should be
+                                embedded (for embedding on subobjects)
+ * @return {object} New target object with referenced data embedded
+ */
+EntityMongoDB.embedAsReference = async (Entity, target, referencePath, embedName = null, objectPath = null) => {
+    const deepTarget = _.get(objectPath, target) || target;
+
+    const withEmbeds = await Promise.all(_.castArray(deepTarget)
+        .map(async deepTarget => {
+            const reference = _.get(referencePath, deepTarget);
+
+            if (!reference) {
+                // No reference on this target object
+                return deepTarget;
+            }
+
+            const embeds = Array.isArray(reference) ?
+                await Entity.findByIds(reference)
+                :
+                await Entity.findById(reference);
+
+            return {
+                ...deepTarget,
+                _embedded: {
+                    ...(deepTarget._embedded || _.stubObject),
+                    [embedName || referencePath]: embeds
+                }
+            };
+        })
+    );
+
+    return objectPath ?
+        _.set(objectPath, withEmbeds, target)
+        :
+        withEmbeds;
+};
+
+
+/**
  * Composition of all functions as partials with collection/Entity applied
  * @param {object} dbCollection Database collection
  * @param {object} Entity Entity function set
@@ -263,7 +308,10 @@ EntityMongoDB.all = (dbCollection, Entity) => {
         deleteById: (...args) => EntityMongoDB.deleteById(dbCollection, ...args),
         aggregate: (...args) => EntityMongoDB.aggregate(dbCollection, ...args),
         count: (...args) => EntityMongoDB.count(dbCollection, ...args),
-        distinct: (...args) => EntityMongoDB.distinct(dbCollection, ...args)
+        distinct: (...args) => EntityMongoDB.distinct(dbCollection, ...args),
+
+        embedAsReference: (...args) => EntityMongoDB.embedAsReference(Entity, ...args),
+        embedAsReferencePF: (...args) => target => EntityMongoDB(Entity, target, ...args)
     };
 };
 
