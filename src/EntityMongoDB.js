@@ -7,6 +7,51 @@ import Sert from 'sert';
 let EntityMongoDB = {};
 
 /**
+ * Convert entity to mongodb-document, converting given paths to object-id
+ * @param {object} entity Entity
+ * @param {array} paths Paths to object-id properties
+ * @return {object} MongoDB document
+ */
+EntityMongoDB.toDoc = (entity, paths = []) => {
+    return _.omitBy(_.isUndefined, paths.reduce((entity, path) => {
+        const value = _.get(path, entity);
+        if (!value) {
+            return entity;
+        }
+        const castValue = Array.isArray(value) ? value.map(monk.id) : monk.id(value);
+        return _.set(path, castValue, entity);
+    }, {
+        _id: entity.id ? monk.id(entity.id) : undefined,
+        ...entity,
+        id: undefined
+    }));
+};
+
+EntityMongoDB.toDocPF = paths => entity => EntityMongoDB.toDoc(entity, paths);
+
+/**
+ * Convert mongodb-document to entity structure, converting given object-id paths to strings
+ * @param {object} doc MongoDB document
+ * @param {array} paths Paths to object-id properties
+ * @return {object} Entity
+ */
+EntityMongoDB.fromDoc = (doc, paths = []) => {
+    return _.omitBy(_.isUndefined, paths.reduce((doc, path) => {
+        const value = _.get(path, doc);
+        if (!value) {
+            return doc;
+        }
+        const castValue = Array.isArray(value) ? value.map(val => val.toString()) : value.toString();
+        return _.set(path, castValue, doc);
+    }, {
+        id: doc._id ? doc._id.toString() : undefined,
+        ...doc,
+        _id: undefined
+    }));
+};
+EntityMongoDB.fromDocPF = paths => entity => EntityMongoDB.fromDoc(entity, paths);
+
+/**
  * Find database entities by query
  * @param {object} dbCollection Database collection
  * @param {object} Entity Entity function set
