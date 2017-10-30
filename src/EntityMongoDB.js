@@ -319,11 +319,16 @@ EntityMongoDB.embedAsReference = async (Entity, target, referencePath, embedName
                 :
                 await Entity.findById(reference);
 
+            const embedsWithSubembeds = Array.isArray(embeds) ?
+                await Promise.all(embeds.map(async embed => await (Entity.embedReferences || _.identity)(embed)))
+                :
+                await (Entity.embedReferences || _.identity)(embeds);
+
             return {
                 ...deepTarget,
                 _embedded: {
                     ...(deepTarget._embedded || _.stubObject),
-                    [embedName || referencePath]: embeds
+                    [embedName || referencePath]: embedsWithSubembeds
                 }
             };
         })
@@ -338,6 +343,14 @@ EntityMongoDB.embedAsReference = async (Entity, target, referencePath, embedName
     return ret;
 };
 
+EntityMongoDB.embedAsReferencePF = (Entity, ...args) =>
+    target => EntityMongoDB.embedAsReference(Entity, target, ...args);
+
+EntityMongoDB.embedAsReferenceAPF = (Entity, ...args) =>
+    async target => await EntityMongoDB.embedAsReference(Entity, await target, ...args);
+
+
+// EntityMongoDB.embedAsReferenceAPF(User, 'service'),
 
 /**
  * Composition of all functions as partials with collection/Entity applied
@@ -364,11 +377,7 @@ EntityMongoDB.all = (dbCollection, Entity) => {
         deleteById: (...args) => EntityMongoDB.deleteById(dbCollection, ...args),
         aggregate: (...args) => EntityMongoDB.aggregate(dbCollection, ...args),
         count: (...args) => EntityMongoDB.count(dbCollection, ...args),
-        distinct: (...args) => EntityMongoDB.distinct(dbCollection, ...args),
-
-        embedAsReference: (...args) => EntityMongoDB.embedAsReference(Entity, ...args),
-        embedAsReferencePF: (...args) => target => EntityMongoDB.embedAsReference(Entity, target, ...args),
-        embedAsReferenceAPF: (...args) => async target => await EntityMongoDB.embedAsReference(Entity, await target, ...args)
+        distinct: (...args) => EntityMongoDB.distinct(dbCollection, ...args)
     };
 };
 
