@@ -284,6 +284,9 @@ EntityMongoDB.distinct = (dbCollection, ...args) => {
     return dbCollection.distinct(...args);
 };
 
+
+// Memo.embedReferences = Factor.embedAsReferencePF('factorId', 'factor', 'tags');
+
 /**
  * Embed a given type of entity as a reference on another object or subobject (like an entity of another type)
  * @param {object} Entity Entity functions for the referenced type of entity
@@ -295,6 +298,11 @@ EntityMongoDB.distinct = (dbCollection, ...args) => {
  * @return {object} New target object with referenced data embedded
  */
 EntityMongoDB.embedAsReference = async (Entity, target, referencePath, embedName = null, objectPath = null) => {
+    if (objectPath && !_.has(objectPath, target)) {
+        // No data at object path - no references to embed.
+        return target;
+    }
+
     const deepTarget = _.get(objectPath, target) || target;
 
     const withEmbedsArray = await Promise.all(_.castArray(deepTarget)
@@ -320,12 +328,14 @@ EntityMongoDB.embedAsReference = async (Entity, target, referencePath, embedName
             };
         })
     );
-    const withEmbeds = Array.isArray(deepTarget) ? withEmbedsArray : _.head(withEmbedsArray);
 
-    return objectPath ?
+    const withEmbeds = Array.isArray(deepTarget) ? withEmbedsArray : _.head(withEmbedsArray);
+    const ret = objectPath ?
         _.set(objectPath, withEmbeds, target)
         :
         withEmbeds;
+
+    return ret;
 };
 
 
