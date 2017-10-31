@@ -1,6 +1,6 @@
 {
   "name": "schema-entity-mongodb",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "MongoDB helper functions for working with data entities based on JSON Schema",
   "main": "lib/index.js",
   "files": [
