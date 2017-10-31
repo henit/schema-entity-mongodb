@@ -298,7 +298,7 @@ EntityMongoDB.distinct = (dbCollection, ...args) => {
  * @return {object} New target object with referenced data embedded
  */
 EntityMongoDB.embedAsReference = async (Entity, target, referencePath, embedName = null, objectPath = null) => {
-    if (objectPath && !_.has(objectPath, target)) {
+    if (!target || (objectPath && !_.has(objectPath, target))) {
         // No data at object path - no references to embed.
         return target;
     }
